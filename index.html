@@ -2,43 +2,47 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>OBJ VR Viewer</title>
+    <title>VR OBJ Teleport Demo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- ✅ A-Frame core -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <!-- ✅ OBJ + MTL loader -->
-    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-obj-loader-component@3.0.1/dist/aframe-obj-loader-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-teleport-controls@4.0.0/dist/aframe-teleport-controls.min.js"></script>
   </head>
   <body>
-    <a-scene renderer="colorManagement: true; useLegacyLights: false">
-      <!-- Lights -->
-      <a-entity light="type: ambient; intensity: 0.3"></a-entity>
+    <a-scene>
+      <!-- Lighting -->
+      <a-entity light="type: ambient; intensity: 0.5"></a-entity>
       <a-entity
         light="type: directional; intensity: 1"
         position="0 5 5"
       ></a-entity>
 
-      <!-- Ground -->
-      <a-plane rotation="-90 0 0" width="10" height="10" color="#222"></a-plane>
+      <!-- Ground (teleportable) -->
+      <a-plane
+        position="0 0 0"
+        rotation="-90 0 0"
+        width="10"
+        height="10"
+        color="#222"
+        class="teleportable"
+      ></a-plane>
 
-      <!-- Camera + cursor -->
-      <a-entity position="0 1.6 0">
+      <!-- Camera rig with teleport controls -->
+      <a-entity id="cameraRig" position="60 1.6 -10">
         <a-camera>
-          <a-cursor
-            raycaster="objects: .clickable"
-            fuse="true"
-            fuse-timeout="1000"
-            material="color: white; shader: flat"
-          ></a-cursor>
+          <a-cursor fuse="true" fuse-timeout="500" color="white"></a-cursor>
         </a-camera>
+
+        <!-- Teleportation -->
+        <a-entity
+          teleport-controls="button: trigger; collisionEntities: .teleportable; cameraRig: #cameraRig"
+        ></a-entity>
       </a-entity>
 
-      <!-- ✅ Load OBJ + MTL -->
+      <!-- OBJ Model -->
       <a-entity
         obj-model="obj: url(mini-library.obj); mtl: url(mini-library.mtl)"
         position="0 0 -3"
         scale="0.05 0.05 0.05"
-        rotation="0 180 0"
       ></a-entity>
     </a-scene>
   </body>
