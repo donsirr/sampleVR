@@ -42,7 +42,7 @@
 
       <!-- GLB Model -->
       <a-entity
-        gltf-model="url(klyde the goat 3.glb)"
+        gltf-model="url(klyde the goat 4.glb)"
         position="0 0 0"
         animation-mixer
         scale="1.5 1.5 1.5"
@@ -178,14 +178,22 @@ function handleGamepadInput() {
   });
 
   // --- Middle mouse button reload ---
-  window.addEventListener('mousedown', (e) => {
-    if (e.button === 1) {
-      // Prevent accidental text selection
-      e.preventDefault();
-      // Reload the page
-      location.reload();
-    }
-  });
+  // --- Middle mouse button: reset to default position ---
+    window.addEventListener('mousedown', (e) => {
+      if (e.button === 1) {
+        e.preventDefault();
+        const rig = document.querySelector('#cameraRig');
+        const camera = rig.querySelector('a-camera');
+
+        // Reset position and rotation to default
+        rig.setAttribute('position', { x: 0, y: 0.5, z: 22.5 });
+        // rig.setAttribute('rotation', { x: 0, y: 0, z: 0 });
+        // camera.setAttribute('rotation', { x: 0, y: 0, z: 0 });
+
+        console.log('Camera rig reset to default position');
+      }
+    });
+
 
   const scene = document.querySelector('a-scene');
 scene.addEventListener('enter-vr', () => {
