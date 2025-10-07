@@ -23,8 +23,8 @@
       <!-- Camera rig -->
       <a-entity 
         id="cameraRig" 
-        position="0 1.6 22.5"
-        movement-controls="fly: false; speed: 0"
+        position="0 1 22.5"
+        movement-controls="fly: true; speed: 0"
         gamepad-controls="controller: 0; enableSettings: true"
       >
         <a-camera look-controls position="0 0 0">
@@ -52,26 +52,13 @@
     </a-scene>
 
 <script>
-  // Jump with PS4 X button
-  window.addEventListener('gamepadbuttondown', (e) => {
-    if (e.detail.index === 0) { // PS4 X button
-      const rig = document.querySelector('#cameraRig');
-      const pos = rig.getAttribute('position');
-      pos.y += 1;
-      rig.setAttribute('position', pos);
-      setTimeout(() => {
-        pos.y -= 1;
-        rig.setAttribute('position', pos);
-      }, 500);
-    }
-  });
-
-  // === Continuous Movement Controls ===
+  // === Basic setup ===
   const rig = document.querySelector('#cameraRig');
   const camera = rig.querySelector('a-camera');
-  const speed = 0.1; // speed per frame
-  let moveDirection = 0; // 1 = forward, -1 = backward, 0 = stop
+  let moveDirection = 0; // 1 = forward, -1 = backward
+  let speed = 0.05; // base speed per frame
 
+  // --- Movement function ---
   function moveRig() {
     if (moveDirection === 0) return;
 
@@ -85,31 +72,83 @@
     rig.setAttribute('position', pos);
   }
 
-  // Run continuously every frame
+  // --- Continuous update loop ---
   function animate() {
     moveRig();
+    handleGamepadInput(); // check controller each frame
     requestAnimationFrame(animate);
   }
   animate();
 
-  // --- Mouse Controls ---
+  // --- Mouse controls (desktop) ---
   window.addEventListener('mousedown', (e) => {
     if (e.button === 0) moveDirection = 1;   // left click → forward
     if (e.button === 2) moveDirection = -1;  // right click → backward
   });
-
-  window.addEventListener('mouseup', () => moveDirection = 0);
-  window.addEventListener('mouseleave', () => moveDirection = 0);
+  window.addEventListener('mouseup', () => (moveDirection = 0));
+  window.addEventListener('mouseleave', () => (moveDirection = 0));
   window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-  // --- Touch Controls (mobile) ---
+  // --- Touch controls (mobile) ---
   window.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) moveDirection = 1;     // one finger → forward
-    else if (e.touches.length === 2) moveDirection = -1; // two fingers → backward
+    if (e.touches.length === 1) moveDirection = 1; // one finger → forward
+    else if (e.touches.length === 2) moveDirection = -1; // two fingers → back
+  });
+  window.addEventListener('touchend', () => (moveDirection = 0));
+
+  // --- Jump button (PS4 X) ---
+  window.addEventListener('gamepadbuttondown', (e) => {
+    if (e.detail.index === 0) { // X button
+      const pos = rig.getAttribute('position');
+      pos.y += 1;
+      rig.setAttribute('position', pos);
+      setTimeout(() => {
+        pos.y -= 1;
+        rig.setAttribute('position', pos);
+      }, 500);
+    }
   });
 
-  window.addEventListener('touchend', () => moveDirection = 0);
+  // === PS4 Controller Movement (Bluetooth) ===
+  // Poll the Gamepad API each frame
+  function handleGamepadInput() {
+    const gamepads = navigator.getGamepads
+      ? navigator.getGamepads()
+      : [];
+
+    if (!gamepads) return;
+
+    const gp = gamepads[0]; // assume first connected controller
+    if (!gp) return;
+
+    // Left stick vertical axis (index 1): -1 = forward, 1 = backward
+    const vertical = gp.axes[1];
+    const deadzone = 0.2;
+
+    if (Math.abs(vertical) > deadzone) {
+      moveDirection = vertical < 0 ? 1 : -1;
+    } else {
+      moveDirection = 0;
+    }
+
+    // Optional: Right trigger (R2) to sprint
+    const r2 = gp.buttons[7];
+    if (r2 && r2.value > 0.2) {
+      speed = 0.15; // sprint speed
+    } else {
+      speed = 0.05; // normal speed
+    }
+  }
+
+  // --- Helpful logging ---
+  window.addEventListener('gamepadconnected', (e) => {
+    console.log('PS4 Controller connected:', e.gamepad.id);
+  });
+  window.addEventListener('gamepaddisconnected', () => {
+    console.log('PS4 Controller disconnected');
+  });
 </script>
+
 
   </body>
 </html>
