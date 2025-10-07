@@ -2,52 +2,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>VR GLB Teleport + Touch/Click Move</title>
+    <title>VR GLB Teleport + Movement Demo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <!-- Patched aframe-extras (recommended for A-Frame 1.5+) -->
-    <script src="https://cdn.jsdelivr.net/gh/n5ro/aframe-extras@master/dist/aframe-extras.min.js"></script>
-
-    <style>
-      /* full-height transparent left/right touch zones (on top of the canvas) */
-      .touch-zone {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        width: 50%;
-        z-index: 9999;
-        touch-action: none;     /* important for reliable touch events */
-        -webkit-user-select: none;
-        user-select: none;
-        background: rgba(0,0,0,0); /* change slightly for debug if you want */
-      }
-      .touch-zone.left { left: 0; }
-      .touch-zone.right { right: 0; }
-
-      /* visual hint (optional) */
-      .hint {
-        position: fixed;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: 6vh;
-        z-index: 10000;
-        font-family: sans-serif;
-        font-size: 14px;
-        color: #fff;
-        background: rgba(0,0,0,0.4);
-        padding: 6px 10px;
-        border-radius: 6px;
-        pointer-events: none;
-      }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@6.1.1/dist/aframe-extras.min.js"></script>
   </head>
-
   <body>
-    <!-- Touch zones overlaying the A-Frame canvas -->
-    <div id="leftZone" class="touch-zone left" aria-hidden="true"></div>
-    <div id="rightZone" class="touch-zone right" aria-hidden="true"></div>
-    <div class="hint">Tap left = forward • Tap right = backward (desktop: left/right click)</div>
-
     <a-scene 
       shadow="type: pcfsoft"
       fog="type: linear; color: #e0e0e0; near: 1; far: 50;"
@@ -60,26 +20,27 @@
         target="#cameraRig"
       ></a-entity>
       
-      <!-- Camera rig: note movement-controls disabled here (we handle movement manually) -->
+      <!-- Camera rig -->
       <a-entity 
         id="cameraRig" 
         position="0 1.6 22.5"
-        click-to-move="speed: 0.08"  <!-- <- adjust speed here -->
+        movement-controls="fly: false; speed: 0"
+        gamepad-controls="controller: 0; enableSettings: true"
       >
-        <a-camera
-          look-controls
-          position="0 0 0"
-        >
+        <a-camera look-controls position="0 0 0">
           <a-cursor fuse="true" fuse-timeout="500" color="white"></a-cursor>
         </a-camera>
 
-        <!-- Teleportation -->
+        <!-- Teleport -->
         <a-entity
           teleport-controls="button: trigger; collisionEntities: .teleportable; cameraRig: #cameraRig"
         ></a-entity>
       </a-entity>
 
-      <!-- GLB Model with shadow -->
+      <!-- Ground or environment -->
+      
+
+      <!-- GLB Model -->
       <a-entity
         gltf-model="url(klyde the goat 3.glb)"
         position="0 0 0"
@@ -90,104 +51,65 @@
       ></a-entity>
     </a-scene>
 
-    <script>
-      AFRAME.registerComponent('click-to-move', {
-        schema: { speed: { type: 'number', default: 0.08 } },
+<script>
+  // Jump with PS4 X button
+  window.addEventListener('gamepadbuttondown', (e) => {
+    if (e.detail.index === 0) { // PS4 X button
+      const rig = document.querySelector('#cameraRig');
+      const pos = rig.getAttribute('position');
+      pos.y += 1;
+      rig.setAttribute('position', pos);
+      setTimeout(() => {
+        pos.y -= 1;
+        rig.setAttribute('position', pos);
+      }, 500);
+    }
+  });
 
-        init: function () {
-          this.rig = document.querySelector('#cameraRig');
-          if (!this.rig) {
-            console.warn('click-to-move: #cameraRig not found.');
-            return;
-          }
+  // === Continuous Movement Controls ===
+  const rig = document.querySelector('#cameraRig');
+  const camera = rig.querySelector('a-camera');
+  const speed = 0.1; // speed per frame
+  let moveDirection = 0; // 1 = forward, -1 = backward, 0 = stop
 
-          this.moving = 0; // 1 = forward, -1 = backward, 0 = stopped
-          this._onMouseDown = this.onMouseDown.bind(this);
-          this._onMouseUp = this.onMouseUp.bind(this);
-          this._onContext = function (e) { e.preventDefault(); };
+  function moveRig() {
+    if (moveDirection === 0) return;
 
-          // Mouse
-          window.addEventListener('mousedown', this._onMouseDown);
-          window.addEventListener('mouseup', this._onMouseUp);
-          window.addEventListener('contextmenu', this._onContext);
+    const rotation = camera.getAttribute('rotation');
+    const angle = THREE.MathUtils.degToRad(rotation.y);
+    const dx = -Math.sin(angle) * moveDirection * speed;
+    const dz = -Math.cos(angle) * moveDirection * speed;
+    const pos = rig.getAttribute('position');
+    pos.x += dx;
+    pos.z += dz;
+    rig.setAttribute('position', pos);
+  }
 
-          // Touch / pointer zones
-          const leftZone = document.getElementById('leftZone');
-          const rightZone = document.getElementById('rightZone');
+  // Run continuously every frame
+  function animate() {
+    moveRig();
+    requestAnimationFrame(animate);
+  }
+  animate();
 
-          this._leftStart = (e) => { e.preventDefault(); this.moving = 1; };
-          this._leftEnd   = (e) => { e.preventDefault(); this.moving = 0; };
-          this._rightStart = (e) => { e.preventDefault(); this.moving = -1; };
-          this._rightEnd   = (e) => { e.preventDefault(); this.moving = 0; };
+  // --- Mouse Controls ---
+  window.addEventListener('mousedown', (e) => {
+    if (e.button === 0) moveDirection = 1;   // left click → forward
+    if (e.button === 2) moveDirection = -1;  // right click → backward
+  });
 
-          if (leftZone && rightZone) {
-            leftZone.addEventListener('touchstart', this._leftStart, { passive: false });
-            leftZone.addEventListener('touchend', this._leftEnd, { passive: false });
-            leftZone.addEventListener('pointerdown', this._leftStart);
-            leftZone.addEventListener('pointerup', this._leftEnd);
+  window.addEventListener('mouseup', () => moveDirection = 0);
+  window.addEventListener('mouseleave', () => moveDirection = 0);
+  window.addEventListener('contextmenu', (e) => e.preventDefault());
 
-            rightZone.addEventListener('touchstart', this._rightStart, { passive: false });
-            rightZone.addEventListener('touchend', this._rightEnd, { passive: false });
-            rightZone.addEventListener('pointerdown', this._rightStart);
-            rightZone.addEventListener('pointerup', this._rightEnd);
-          }
-        },
+  // --- Touch Controls (mobile) ---
+  window.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) moveDirection = 1;     // one finger → forward
+    else if (e.touches.length === 2) moveDirection = -1; // two fingers → backward
+  });
 
-        onMouseDown: function (e) {
-          // 0 = left button, 2 = right button
-          if (e.button === 0) this.moving = 1;
-          if (e.button === 2) this.moving = -1;
-        },
+  window.addEventListener('touchend', () => moveDirection = 0);
+</script>
 
-        onMouseUp: function (e) {
-          if (e.button === 0 || e.button === 2) this.moving = 0;
-        },
-
-        tick: function (time, delta) {
-          if (!this.rig || this.moving === 0) return;
-
-          const dt = delta / 1000; // seconds
-          const distance = this.data.speed * dt * this.moving;
-
-          // find camera inside the rig
-          const cam = this.rig.querySelector('[camera]') || document.querySelector('[camera]');
-          if (!cam || !cam.object3D) return;
-
-          // compute forward direction (camera forward, flattened on XZ plane)
-          const dir = new THREE.Vector3();
-          cam.object3D.getWorldDirection(dir);
-          dir.y = 0;
-          dir.normalize();
-
-          // move rig along that direction
-          this.rig.object3D.position.addScaledVector(dir, distance);
-
-          // Optionally keep rig attributes in sync with A-Frame DOM (not always required)
-          const pos = this.rig.object3D.position;
-          this.rig.setAttribute('position', { x: pos.x, y: pos.y, z: pos.z });
-        },
-
-        remove: function () {
-          window.removeEventListener('mousedown', this._onMouseDown);
-          window.removeEventListener('mouseup', this._onMouseUp);
-          window.removeEventListener('contextmenu', this._onContext);
-
-          const leftZone = document.getElementById('leftZone');
-          const rightZone = document.getElementById('rightZone');
-          if (leftZone) {
-            leftZone.removeEventListener('touchstart', this._leftStart);
-            leftZone.removeEventListener('touchend', this._leftEnd);
-            leftZone.removeEventListener('pointerdown', this._leftStart);
-            leftZone.removeEventListener('pointerup', this._leftEnd);
-          }
-          if (rightZone) {
-            rightZone.removeEventListener('touchstart', this._rightStart);
-            rightZone.removeEventListener('touchend', this._rightEnd);
-            rightZone.removeEventListener('pointerdown', this._rightStart);
-            rightZone.removeEventListener('pointerup', this._rightEnd);
-          }
-        }
-      });
-    </script>
   </body>
 </html>
