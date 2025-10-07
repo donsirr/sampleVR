@@ -158,6 +158,18 @@
     }
   });
 
+  const scene = document.querySelector('a-scene');
+scene.addEventListener('enter-vr', () => {
+  const rig = document.querySelector('#cameraRig');
+  rig.setAttribute('position', {x: 0, y: 0, z: 22.5}); // lower rig for VR
+});
+
+scene.addEventListener('exit-vr', () => {
+  const rig = document.querySelector('#cameraRig');
+  rig.setAttribute('position', {x: 0, y: 0.5, z: 22.5}); // restore for desktop
+});
+
+
 </script>
 
 
