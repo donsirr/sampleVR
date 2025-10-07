@@ -8,26 +8,31 @@
     <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-teleport-controls@4.0.0/dist/aframe-teleport-controls.min.js"></script>
   </head>
   <body>
-    <a-scene>
+    <a-scene 
+      shadow="type: pcfsoft"
+      fog="type: linear; color: #e0e0e0; near: 1; far: 50;"
+    >
       <!-- Lighting -->
       <a-entity light="type: ambient; intensity: 0.5"></a-entity>
       <a-entity
-        light="type: directional; intensity: 1"
-        position="0 5 5"
+        light="type: directional; intensity: 0.5; castShadow: true"
+        position="5 5 5"
+        target="#cameraRig"
       ></a-entity>
-
-      <!-- Ground (teleportable) -->
-      <a-plane
-        position="0 0 0"
-        rotation="-90 0 0"
-        width="10"
-        height="10"
-        color="#222"
+      
+      <!-- Ground (teleportable, with shadows) -->
+      <!-- <a-plane 
+        position="0 0 -10" 
+        rotation="-90 0 0" 
+        width="30" 
+        height="30" 
+        color="#B0B0B0" 
         class="teleportable"
-      ></a-plane>
+        shadow="receive: true"
+      ></a-plane> -->
 
       <!-- Camera rig with teleport controls -->
-      <a-entity id="cameraRig" position="0 1 0">
+      <a-entity id="cameraRig" position="0 1 10">
         <a-camera>
           <a-cursor fuse="true" fuse-timeout="500" color="white"></a-cursor>
         </a-camera>
@@ -38,15 +43,16 @@
         ></a-entity>
       </a-entity>
 
-      <!-- GLB Model -->
+      <!-- GLB Model with shadow -->
       <a-entity
-        gltf-model="url(test.glb)"
+        gltf-model="url(test2.glb)"
         position="0 0 0"
         scale="2 2 2"
         class="teleportable"
+        shadow="cast: true; receive: true"
       ></a-entity>
 
-      <!-- Debugging: A box to ensure things are visible -->
+      <!-- Optional: Debugging box (can be removed) -->
       <!-- <a-box position="0 1 -3" color="red"></a-box> -->
     </a-scene>
   </body>
