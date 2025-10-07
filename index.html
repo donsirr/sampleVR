@@ -97,8 +97,33 @@
   window.addEventListener('touchend', () => (moveDirection = 0));
 
   // --- Jump button (PS4 X) ---
-  window.addEventListener('gamepadbuttondown', (e) => {
-    if (e.detail.index === 0) { // X button
+  // === PS4 Controller Movement (Bluetooth) ===
+let prevButtons = [];
+
+function handleGamepadInput() {
+  const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+  const gp = gamepads[0];
+  if (!gp) return;
+
+  // Left stick movement
+  const vertical = gp.axes[1];
+  const deadzone = 0.2;
+  if (Math.abs(vertical) > deadzone) {
+    moveDirection = vertical < 0 ? 1 : -1;
+  } else {
+    moveDirection = 0;
+  }
+
+  // R2 sprint
+  const r2 = gp.buttons[7];
+  if (r2 && r2.value > 0.2) {
+    speed = 0.15;
+  } else {
+    speed = 0.05;
+  }
+
+  // --- Handle X button (button 0) for jump ---
+  if (gp.buttons[0].pressed && !prevButtons[0]) {
       const pos = rig.getAttribute('position');
       pos.y += 1;
       rig.setAttribute('position', pos);
@@ -107,7 +132,11 @@
         rig.setAttribute('position', pos);
       }, 500);
     }
-  });
+
+    // Save current button states for next frame
+    prevButtons = gp.buttons.map(b => b.pressed);
+  }
+
 
   // === PS4 Controller Movement (Bluetooth) ===
   // Poll the Gamepad API each frame
