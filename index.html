@@ -23,7 +23,7 @@
       <!-- Camera rig -->
       <a-entity 
         id="cameraRig" 
-        position="0 1 22.5"
+        position="0 0.5 22.5"
         movement-controls="fly: true; speed: 0"
         gamepad-controls="controller: 0; enableSettings: true"
       >
@@ -147,6 +147,17 @@
   window.addEventListener('gamepaddisconnected', () => {
     console.log('PS4 Controller disconnected');
   });
+
+  // --- Middle mouse button reload ---
+  window.addEventListener('mousedown', (e) => {
+    if (e.button === 1) {
+      // Prevent accidental text selection
+      e.preventDefault();
+      // Reload the page
+      location.reload();
+    }
+  });
+
 </script>
 
 
